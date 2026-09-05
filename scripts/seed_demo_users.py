@@ -14,6 +14,7 @@ Usage:
 
 from __future__ import annotations
 
+import json
 import secrets
 import sys
 from pathlib import Path
@@ -26,13 +27,44 @@ from app.db.database import create_db_engine, init_db, make_session_factory, ses
 from app.db.models import User
 from app.services import auth_service
 
-# merchant_demo_0020 is the seasonal_sale_false_positive_candidate demo
-# case's merchant -- the one docs/UI_DEMO_GUIDE.md already walks through
-# for the Merchant Response page, so the demo merchant account can log in
-# and act on a real seeded case.
+DEMO_CASE_PACKETS_PATH = Path(__file__).resolve().parent.parent / "demo_data" / "demo_case_packets.json"
+
+# Which seeded demo case's merchant the demo merchant account should be able
+# to log in as -- the one docs/UI_DEMO_GUIDE.md walks through for the
+# Merchant Response page. `ml/generate_demo_cases.py` picks this scenario's
+# merchant_id freshly from whatever synthetic dataset exists at generation
+# time, so it is NOT a stable value across regenerations -- it must be read
+# from the current demo_data/demo_case_packets.json, never hardcoded (a
+# hardcoded value silently drifted out of sync with the real seeded cases
+# once before, breaking the merchant-response demo flow entirely).
+MERCHANT_DEMO_SCENARIO_KEY = "seasonal_sale_false_positive_candidate"
+FALLBACK_MERCHANT_ID = "merchant_demo_0001"
+
+
+def _resolve_demo_merchant_id() -> str:
+    """Reads the current demo_data/demo_case_packets.json for the scenario
+    merchant_demo should be able to act on. Falls back to a fixed ID (with a
+    warning) if the file is missing or doesn't have the expected shape --
+    seeding still proceeds rather than crashing, since a merchant login that
+    happens to see zero cases is still safer than no login at all."""
+    try:
+        data = json.loads(DEMO_CASE_PACKETS_PATH.read_text())
+        merchant_id = data[MERCHANT_DEMO_SCENARIO_KEY]["identification"]["merchant_id"]
+        if isinstance(merchant_id, str) and merchant_id:
+            return merchant_id
+    except (FileNotFoundError, json.JSONDecodeError, KeyError, TypeError):
+        pass
+    print(
+        f"Warning: could not read merchant_id for '{MERCHANT_DEMO_SCENARIO_KEY}' from "
+        f"{DEMO_CASE_PACKETS_PATH} -- falling back to {FALLBACK_MERCHANT_ID}. "
+        "Run `python3 -m ml.generate_demo_cases` first if this looks wrong."
+    )
+    return FALLBACK_MERCHANT_ID
+
+
 DEMO_ACCOUNTS = [
     {"username": "reviewer_demo", "role": "reviewer", "actor_id": "analyst_demo_001", "display_name": "Demo Reviewer", "merchant_id": None},
-    {"username": "merchant_demo", "role": "merchant", "actor_id": "merchant_demo_actor_001", "display_name": "Demo Merchant", "merchant_id": "merchant_demo_0020"},
+    {"username": "merchant_demo", "role": "merchant", "actor_id": "merchant_demo_actor_001", "display_name": "Demo Merchant", "merchant_id": _resolve_demo_merchant_id()},
     {"username": "riskmanager_demo", "role": "risk_manager", "actor_id": "riskmanager_demo_001", "display_name": "Demo Risk Manager", "merchant_id": None},
 ]
 

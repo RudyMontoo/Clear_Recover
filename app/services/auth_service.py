@@ -25,7 +25,13 @@ from app.db.models import User, UserSession
 from app.time_utils import as_aware_utc as _as_aware_utc
 from app.time_utils import utcnow as _utcnow
 
-PBKDF2_ITERATIONS = 260_000
+# OWASP's current (2023) minimum recommendation for PBKDF2-HMAC-SHA256 is
+# 600,000 iterations; this was previously 260,000 (an older OWASP figure).
+# The iteration count is not stored per-hash, only this module-level
+# constant is used for both hashing and verification -- so bumping it
+# invalidates every existing seeded demo password hash. Re-run
+# scripts/seed_demo_users.py after this change; don't just restart the app.
+PBKDF2_ITERATIONS = 600_000
 SESSION_LIFETIME = dt.timedelta(hours=12)
 
 VALID_ROLES = {"reviewer", "merchant", "risk_manager"}

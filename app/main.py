@@ -67,6 +67,25 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
     )
 
 
+# Pydantic's error objects carry an "input" key -- the raw value the client
+# submitted for that field. No current field with one of these names can
+# actually fail type validation (e.g. password: str accepts any string), so
+# this is not exploitable today -- but the day a stricter type/pattern is
+# added to a sensitively-named field, its raw submitted value would start
+# being echoed back verbatim in a 422 response. Stripped here so that can
+# never happen silently.
+_SENSITIVE_FIELD_NAMES = {"password", "token", "secret", "session_token"}
+
+
+def _redact_sensitive_inputs(errors: list[dict]) -> list[dict]:
+    redacted = []
+    for error in errors:
+        if set(error.get("loc", ())) & _SENSITIVE_FIELD_NAMES:
+            error = {**error, "input": "[REDACTED]"}
+        redacted.append(error)
+    return redacted
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     return JSONResponse(
@@ -75,7 +94,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "error": {
                 "code": ErrorCode.VALIDATION_ERROR.value,
                 "message": "Request validation failed.",
-                "details": exc.errors(),
+                "details": _redact_sensitive_inputs(exc.errors()),
                 "synthetic_data_notice": SYNTHETIC_DATA_NOTICE,
             }
         },

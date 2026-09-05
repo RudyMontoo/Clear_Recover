@@ -145,3 +145,37 @@ def test_docs_route_is_exempt_from_strict_csp_but_keeps_other_headers(client, se
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
     assert "content-security-policy" not in response.headers
+
+
+def test_validation_error_redacts_sensitive_field_input(client, session_factory):
+    """A type-mismatched password field must not echo its raw submitted
+    value back in the 422 response body -- see app/main.py's
+    _redact_sensitive_inputs()."""
+    response = client.post(
+        "/auth/login",
+        json={"username": "reviewer_login_test", "password": 12345},
+    )
+    assert response.status_code == 422
+    body = response.json()
+
+    serialized = str(body)
+    assert "12345" not in serialized
+    password_errors = [e for e in body["error"]["details"] if "password" in e.get("loc", [])]
+    assert password_errors
+    assert all(e["input"] == "[REDACTED]" for e in password_errors)
+
+
+def test_validation_error_preserves_input_for_non_sensitive_fields(client, session_factory):
+    """The redaction must be scoped to sensitive field names only -- a
+    non-sensitive field's submitted value should still be visible, since
+    over-redacting would make every validation error useless for debugging."""
+    response = client.post(
+        "/auth/login",
+        json={"username": 12345, "password": "irrelevant"},
+    )
+    assert response.status_code == 422
+    body = response.json()
+
+    username_errors = [e for e in body["error"]["details"] if "username" in e.get("loc", [])]
+    assert username_errors
+    assert any(e["input"] == 12345 for e in username_errors)

@@ -6,6 +6,7 @@ only display helpers around data already returned by the API client.
 from __future__ import annotations
 
 import html
+import re
 
 import streamlit as st
 
@@ -32,6 +33,29 @@ INTENSITY_BACKGROUNDS = {
     "medium": "#fff8c5",
     "high": "#ffebe9",
 }
+
+
+def inject_custom_css() -> None:
+    """Local, inline CSS only -- no external stylesheet, font, or CDN
+    request (see SECURITY.md: "built-in theming only, no external
+    CSS/fonts/CDN"). Adds a light shadow to bordered containers so cards
+    read as distinct surfaces instead of flat outlines, and tightens the
+    default vertical rhythm between stacked sections."""
+    st.markdown(
+        """
+        <style>
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            box-shadow: 0 1px 3px rgba(11, 31, 58, 0.08);
+        }
+        div[data-testid="stMetric"] {
+            background-color: var(--secondary-background-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def render_disclaimer() -> None:
@@ -61,6 +85,58 @@ def render_connection_status(client: ClearRiskAPIClient) -> bool:
             icon="🔌",
         )
         return False
+
+
+_EMBEDDED_ENUM_TOKEN_RE = re.compile(r"\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b")
+
+
+def humanize_embedded_enums(text: str | None) -> str:
+    """Cleans up backend-generated prose (e.g. analyst_summary) that embeds a
+    raw enum value mid-sentence, such as "Recommended action:
+    ALLOW_WITH_MONITORING." -> "Recommended action: Allow with monitoring."
+    Display-only -- this never touches the underlying case/API data, only
+    what the dashboard prints. A plain-text heuristic (SNAKE_CASE token,
+    2+ words), not a field-aware parser, so it is applied only to prose
+    fields, not to raw identifiers like case IDs."""
+    if not text:
+        return text or ""
+    return _EMBEDDED_ENUM_TOKEN_RE.sub(lambda m: humanize_enum(m.group(0)), text)
+
+
+def humanize_enum(value: str | None) -> str:
+    """Turns a backend enum string (SNAKE_CASE, e.g. "ALLOW_WITH_MONITORING",
+    "REVIEW_CASE_CREATED") into a readable label ("Allow with monitoring",
+    "Review case created"). Display-only -- the raw value is still what's
+    sent to/compared against the API everywhere else."""
+    if not value:
+        return "—"
+    return str(value).replace("_", " ").strip().capitalize()
+
+
+STATUS_BADGE_COLORS = {
+    "OPEN": ("#0550ae", "#ddf4ff"),
+    "EVIDENCE_REQUESTED": ("#9a6700", "#fff8c5"),
+    "EVIDENCE_SUBMITTED": ("#9a6700", "#fff8c5"),
+    "UNDER_REVIEW": ("#0550ae", "#ddf4ff"),
+    "RESOLVED": ("#1a7f37", "#dafbe1"),
+    "ESCALATED": ("#cf222e", "#ffebe9"),
+}
+
+
+def status_badge(value: str | None) -> str:
+    """Same visual language as intensity_badge, for case_status/recommendation
+    values -- a colored pill with a human-readable label instead of a raw
+    SNAKE_CASE string, HTML-escaped for the same reason intensity_badge is."""
+    label = html.escape(humanize_enum(value))
+    color, background = STATUS_BADGE_COLORS.get((value or "").upper(), ("#57606a", "#eaeef2"))
+    return (
+        f'<span style="background-color:{background}; color:{color}; '
+        f'padding:2px 8px; border-radius:6px; font-weight:600; font-size:0.85em; white-space:nowrap;">{label}</span>'
+    )
+
+
+def render_status_badge(value: str | None) -> None:
+    st.markdown(status_badge(value), unsafe_allow_html=True)
 
 
 def intensity_badge(intensity: str | None) -> str:

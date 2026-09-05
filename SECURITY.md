@@ -87,9 +87,12 @@
  `docs/MILESTONE_9_AUTH.md` for the full design and as-built report. This is
  **not** production-grade auth:
 
- - Password hashing: stdlib `hashlib.pbkdf2_hmac` (260,000 iterations),
-   adequate for this local single-operator prototype, not a claim of
-   production password-security compliance.
+ - Password hashing: stdlib `hashlib.pbkdf2_hmac` (600,000 iterations, matching
+   OWASP's current PBKDF2-HMAC-SHA256 minimum recommendation), adequate for
+   this local single-operator prototype, not a claim of production
+   password-security compliance. The iteration count is not stored per-hash --
+   only the module-level constant -- so any change to it requires re-running
+   `scripts/seed_demo_users.py` to re-hash the seeded demo passwords.
  - No MFA, no password reset flow, no login rate limiting/lockout, no
    OAuth/SSO, no external identity provider.
  - Sessions are opaque server-side tokens (not JWT) with a fixed 12-hour

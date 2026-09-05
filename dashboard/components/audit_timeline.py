@@ -8,7 +8,7 @@ from __future__ import annotations
 import streamlit as st
 
 from dashboard.api_client import ClearRiskAPIClient, DashboardAPIError
-from dashboard.components.common import format_timestamp, get_available_case_ids, render_error
+from dashboard.components.common import format_timestamp, get_available_case_ids, humanize_enum, render_error
 
 ACTOR_LABELS = {
     "system": "🖥️ System event",
@@ -57,7 +57,7 @@ def render_audit_timeline(client: ClearRiskAPIClient) -> None:
             "#": event["event_sequence_number"],
             "Timestamp": format_timestamp(event["event_timestamp"]),
             "Actor": _actor_label(event["actor_type"]),
-            "Event": event["event_type"],
+            "Event": humanize_enum(event["event_type"]),
         }
         for event in events
     ]
@@ -74,7 +74,7 @@ def render_audit_timeline(client: ClearRiskAPIClient) -> None:
     selected_rows = selection.selection.rows if selection and selection.selection else []
     if selected_rows:
         event = events[selected_rows[0]]
-        st.markdown(f"**Event #{event['event_sequence_number']} — {event['event_type']}**")
+        st.markdown(f"**Event #{event['event_sequence_number']} — {humanize_enum(event['event_type'])}**")
         payload = event.get("event_payload") or {}
         if payload:
             for key, value in payload.items():

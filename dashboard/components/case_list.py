@@ -8,7 +8,7 @@ from __future__ import annotations
 import streamlit as st
 
 from dashboard.api_client import ClearRiskAPIClient, DashboardAPIError
-from dashboard.components.common import format_timestamp, render_error, sla_display as _sla_display
+from dashboard.components.common import format_timestamp, humanize_enum, render_error, sla_display as _sla_display
 
 STATUS_OPTIONS = ["All", "OPEN", "EVIDENCE_REQUESTED", "EVIDENCE_SUBMITTED", "UNDER_REVIEW", "RESOLVED", "ESCALATED"]
 RECOMMENDATION_OPTIONS = ["All", "APPROVE", "ALLOW_WITH_MONITORING", "REQUEST_EVIDENCE", "MANUAL_REVIEW_REQUIRED", "ESCALATE_TO_COMPLIANCE"]
@@ -56,8 +56,12 @@ def render_review_queue(client: ClearRiskAPIClient) -> None:
 
     with st.expander("Filters"):
         filter_cols = st.columns(3)
-        status_filter = filter_cols[0].selectbox("Case status", STATUS_OPTIONS)
-        recommendation_filter = filter_cols[1].selectbox("Recommended workflow action", RECOMMENDATION_OPTIONS)
+        status_filter = filter_cols[0].selectbox(
+            "Case status", STATUS_OPTIONS, format_func=lambda v: v if v == "All" else humanize_enum(v)
+        )
+        recommendation_filter = filter_cols[1].selectbox(
+            "Recommended workflow action", RECOMMENDATION_OPTIONS, format_func=lambda v: v if v == "All" else humanize_enum(v)
+        )
         intensity_filter = filter_cols[2].selectbox("Risk signal intensity", INTENSITY_OPTIONS)
 
     try:
@@ -83,9 +87,9 @@ def render_review_queue(client: ClearRiskAPIClient) -> None:
             "Merchant ID": item["merchant_id"],
             "Week start": item["week_start"],
             "Risk signal intensity": item["risk_signal_intensity"],
-            "Recommended workflow action": item["recommendation"],
-            "Case status": item["case_status"],
-            "Final outcome": item.get("final_outcome") or "—",
+            "Recommended workflow action": humanize_enum(item["recommendation"]),
+            "Case status": humanize_enum(item["case_status"]),
+            "Final outcome": humanize_enum(item.get("final_outcome")),
             "Created": format_timestamp(item["created_at"]),
             "SLA": _sla_display(item),
         }
@@ -108,9 +112,9 @@ def render_review_queue(client: ClearRiskAPIClient) -> None:
     picked = items[selected_rows[0]]
     st.markdown(
         f"**{picked['case_id']}** — {picked['merchant_id']}, week of {picked['week_start']} "
-        f"· {picked['case_status']} · {picked['recommendation']}"
+        f"· {humanize_enum(picked['case_status'])} · {humanize_enum(picked['recommendation'])}"
     )
     if st.button("Open case detail", type="primary"):
         st.session_state["selected_case_id"] = picked["case_id"]
-        st.session_state["nav_page"] = "Case Detail"
+        st.session_state["pending_nav_page"] = "Case Detail"
         st.rerun()

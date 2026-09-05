@@ -12,7 +12,7 @@ from __future__ import annotations
 import streamlit as st
 
 from dashboard.api_client import ClearRiskAPIClient, DashboardAPIError
-from dashboard.components.common import get_available_case_ids, render_error
+from dashboard.components.common import get_available_case_ids, humanize_enum, render_error
 
 EXAMPLE_REFERENCES = [
     "invoice_demo_001.pdf",
@@ -46,7 +46,7 @@ def render_merchant_response(client: ClearRiskAPIClient) -> None:
         render_error(exc)
         return
 
-    st.markdown(f"**Case status:** {case['case_status']}")
+    st.markdown(f"**Case status:** {humanize_enum(case['case_status'])}")
 
     merchant_safe = case.get("merchant_safe_explanation") or {}
     with st.container(border=True):

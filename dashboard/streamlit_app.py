@@ -20,12 +20,18 @@ from dashboard.api_client import ClearRiskAPIClient
 from dashboard.components.audit_timeline import render_audit_timeline
 from dashboard.components.case_detail import render_case_detail
 from dashboard.components.case_list import render_review_queue
-from dashboard.components.common import render_connection_status, render_disclaimer, render_page_notice
+from dashboard.components.common import (
+    inject_custom_css,
+    render_connection_status,
+    render_disclaimer,
+    render_page_notice,
+)
 from dashboard.components.evidence_form import render_merchant_response
 from dashboard.components.login import render_login
 from dashboard.components.metrics import render_overview
 
 st.set_page_config(page_title="ClearRisk Recover", page_icon="🛡️", layout="wide")
+inject_custom_css()
 
 PAGES = ["Overview", "Review Queue", "Case Detail", "Merchant Response", "Audit Timeline"]
 
@@ -47,12 +53,26 @@ def _render_authenticated_app(client: ClearRiskAPIClient) -> None:
 
     if "nav_page" not in st.session_state or st.session_state["nav_page"] not in allowed_pages:
         st.session_state["nav_page"] = allowed_pages[0]
+    if "nav_radio" not in st.session_state:
+        st.session_state["nav_radio"] = st.session_state["nav_page"]
+
+    # Programmatic navigation (e.g. "Open case detail") cannot write directly
+    # to st.session_state["nav_radio"] once that widget has been instantiated
+    # in the current run -- Streamlit raises StreamlitAPIException. Callers
+    # instead set "pending_nav_page" and st.rerun(); this runs before the
+    # radio widget below is created on the next script run, which is the
+    # only point such a write is allowed. The widget is seeded purely from
+    # session_state (no index= argument) so there is exactly one source of
+    # truth for its value, on every run.
+    pending_nav_page = st.session_state.pop("pending_nav_page", None)
+    if pending_nav_page in allowed_pages:
+        st.session_state["nav_page"] = pending_nav_page
+        st.session_state["nav_radio"] = pending_nav_page
 
     with st.sidebar:
         st.title("ClearRisk Recover")
         st.caption(f"{current_user['display_name']} · {current_user['role']}")
-        default_index = allowed_pages.index(st.session_state["nav_page"])
-        page = st.radio("Navigate", allowed_pages, index=default_index, key="nav_radio")
+        page = st.radio("Navigate", allowed_pages, key="nav_radio")
         st.session_state["nav_page"] = page
 
         active_case = st.session_state.get("selected_case_id")

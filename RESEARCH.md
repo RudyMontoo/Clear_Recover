@@ -10,6 +10,7 @@
 
  ## Verified facts
 
+
  - Payment aggregators in India are regulated by RBI and must conduct customer/merchan
  - Payment gateways may use holds, reserves, KYC/compliance reviews, and other control
  - Fraud/risk systems must balance fraud detection with false-positive harm: incorrect
@@ -19,7 +20,7 @@
  - Razorpay public guidance describes account freezes/settlement holds in relation to
  - Public review-site complaints can indicate recurring user pain, but individual comp
 
- ## Design proposal
+ ## Design proposal  
 
  This MVP does not attempt to replicate a payment gateway's hidden fraud engine. It de
 
@@ -29,7 +30,7 @@
  - Safe explanation (with concrete before/after trend values) and evidence request.
  - Human review and merchant appeal.
  - Auditability and false-positive/false-negative measurement.
- ## Assumptions
+ ## Assumptions
 
  - A future integration partner could supply permissioned transaction, refund, chargeb
  - High-impact actions would remain in an authorized payment-gateway workflow, not ins
@@ -42,12 +43,10 @@
  - Whether a given public complaint reflects fraud, operational error, policy violatio
 
  ## What we can safely claim
-
  ClearRisk Recover is a synthetic-data prototype for explainable merchant refund/chargeback
  loss-risk review. It
 
  ## What still needs verification
-
  - Specific integration options with a payment aggregator.
  - Legal/privacy/security requirements for any real deployment.
  - Model effectiveness using representative, permissioned, real-world data.

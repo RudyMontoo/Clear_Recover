@@ -16,6 +16,21 @@ banking payments, use real payment or personal data, or freeze funds, hold
 settlement, ban merchants, terminate accounts, reject payments, or make
 legal/compliance decisions. Not production-ready or compliance-certified.
 
+## Live demo deployment
+
+Deployed on Azure App Service (containers) for demo purposes only — same synthetic-data prototype described above, not a production deployment.
+
+- Dashboard: [https://clearrisk-recover-dashboard.azurewebsites.net](https://clearrisk-recover-dashboard.azurewebsites.net)
+- API: [https://clearrisk-recover-api.azurewebsites.net](https://clearrisk-recover-api.azurewebsites.net) ([/docs](https://clearrisk-recover-api.azurewebsites.net/docs))
+
+Demo login credentials (local-demo auth only, seeded on this deployment — see `SECURITY.md` for what this authentication is and is not):
+
+| Role | Username | Password |
+|---|---|---|
+| Reviewer | `reviewer_demo` | `T9ueNUiX6dOZ` |
+| Merchant | `merchant_demo` | `kKMcAebItbmb` |
+| Risk manager | `riskmanager_demo` | `opltgtfnSjDm` |
+
 ## Razorpay Buildathon — Track 2: AI Risk Manager
 
 > ClearRisk Recover detects early merchant refund and chargeback spikes, explains the risk factors, guides evidence collection, keeps a human reviewer in control, gives merchants a path to respond, and measures false positives.

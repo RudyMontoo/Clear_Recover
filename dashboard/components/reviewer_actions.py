@@ -10,7 +10,7 @@ from __future__ import annotations
 import streamlit as st
 
 from dashboard.api_client import ClearRiskAPIClient, DashboardAPIError
-from dashboard.components.common import format_timestamp, render_error
+from dashboard.components.common import format_timestamp, humanize_enum, render_error
 
 # case_status -> list of (action_value, safe_label)
 ACTIONS_BY_STATUS = {
@@ -45,7 +45,7 @@ def render_reviewer_actions(client: ClearRiskAPIClient, case: dict) -> None:
 
     if status == "RESOLVED":
         st.success("This case is resolved. It is immutable — no further reviewer action is available.")
-        st.markdown(f"**Final outcome:** {case.get('final_outcome') or '—'}")
+        st.markdown(f"**Final outcome:** {humanize_enum(case.get('final_outcome'))}")
         st.markdown(f"**Reviewer note:** {case.get('reviewer_note') or '—'}")
         st.markdown(f"**Resolved at:** {format_timestamp(case.get('resolved_at'))}")
         return

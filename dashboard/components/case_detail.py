@@ -10,7 +10,15 @@ from __future__ import annotations
 import streamlit as st
 
 from dashboard.api_client import ClearRiskAPIClient, DashboardAPIError
-from dashboard.components.common import get_available_case_ids, render_error, render_intensity_badge, sla_display
+from dashboard.components.common import (
+    get_available_case_ids,
+    humanize_embedded_enums,
+    humanize_enum,
+    render_error,
+    render_intensity_badge,
+    render_status_badge,
+    sla_display,
+)
 from dashboard.components.reviewer_actions import render_reviewer_actions
 
 UNCERTAINTY_TEXT = "This is a review signal, not a final fraud finding."
@@ -34,12 +42,14 @@ def _render_case_header(case: dict) -> None:
         cols = st.columns(4)
         cols[0].markdown(f"**Merchant**  \n`{case['merchant_id']}`")
         cols[1].markdown(f"**Week start**  \n{case['week_start']}")
-        cols[2].markdown(f"**Status**  \n{case['case_status']}")
+        with cols[2]:
+            st.markdown("**Status**")
+            render_status_badge(case.get("case_status"))
         with cols[3]:
             st.markdown("**Risk signal**")
             render_intensity_badge(case.get("risk_signal_intensity"))
 
-        st.markdown(f"**Recommended workflow action:** {case['recommendation']}")
+        st.markdown(f"**Recommended workflow action:** {humanize_enum(case['recommendation'])}")
 
         sla_text = sla_display(case)
         if case.get("sla_breached"):
@@ -76,7 +86,7 @@ def _render_analyst_detail(case: dict) -> None:
 
 
 def _render_why_flagged(case: dict) -> None:
-    st.write(case.get("analyst_summary", ""))
+    st.write(humanize_embedded_enums(case.get("analyst_summary", "")))
 
     explanations_by_rule = {e["rule_id"]: e["explanation"] for e in (case.get("triggered_rule_explanations") or [])}
     triggered_rules = case.get("triggered_rules") or []
@@ -93,7 +103,7 @@ def _render_why_flagged(case: dict) -> None:
     else:
         st.caption("No rules triggered for this merchant-week.")
 
-    st.markdown(f"**Policy explanation:** {case.get('policy_explanation', '')}")
+    st.markdown(f"**Policy explanation:** {humanize_embedded_enums(case.get('policy_explanation', ''))}")
     st.info(UNCERTAINTY_TEXT, icon="ℹ️")
 
 

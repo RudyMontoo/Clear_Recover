@@ -1,0 +1,12 @@
+.git
+.claude
+.claude-flow
+.claude-skills-log.jsonl
+CLAUDE.md
+.mcp.json
+__pycache__
+*.pyc
+.pytest_cache
+clearrisk_recover.db
+data/evidence_attachments
+tests
